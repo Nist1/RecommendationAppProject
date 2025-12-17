@@ -6,7 +6,6 @@ backend/data/processed/russian_news_processed_full.csv
 backend/data/processed/russian_news_processed.csv
 backend/data/raw/russian_news1.csv
 backend/data/raw/russian_news2.csv
-backend/data/raw/sample_news.csv
 backend/ml_engine/__pycache__/preprocessor.cpython-313.pyc
 backend/ml_engine/__pycache__/vectorizer.cpython-313.pyc
 backend/ml_engine/models/api_metadata.json
@@ -16,3 +15,8 @@ backend/ml_engine/models/similarity_matrix.pkl
 backend/ml_engine/models/text_vectors.pkl
 backend/ml_engine/models/tfidf_vectorizer.pkl
 backend/ml_engine/models/vectorizer_stats.txt
+backend/data/raw/uploaded_dataset.csv
+backend/db.sqlite3
+backend/config/__pycache__
+backend/ml_engine/__pycache__
+backend/recs_api/__pycache__

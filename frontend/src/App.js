@@ -31,45 +31,46 @@ function App() {
   const [isRecsRequested, setRecsRequested] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [searchQuery, setSeacrhQuery] = useState('');
+  const [results, setResults] = useState([]);
 
   const uploadDataset = async () => {
-  //   const fileInput = document.createElement('input');
-  //   fileInput.type = 'file';
-  //   fileInput.accept = '.csv,.json';
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = '.csv,.json';
 
-  //   fileInput.onchange = async (event) => {
-  //     const file = event.target.files[0];
-  //     if (!file) return;
+    fileInput.onchange = async (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
 
-  //     const formData = newFormData();
-  //     formData.append('dataset', file);
+      const formData = new FormData();
+      formData.append('dataset', file);
 
-  //     try {
-  //       const response = await axios.post('http://127.0.0.1:8000/upload/', formData, {
-  //         headers: {
-  //           'Content-Type': 'multipart/form-data',
-  //         },
-  //         onUploadProgress: (progressEvent) => {
-  //           const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-  //           setUploadProgress(percentCompleted);
-  //         },
-  //       });
+      try {
+        const response = await axios.post('http://127.0.0.1:8000/api/upload/', formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+          onUploadProgress: (progressEvent) => {
+            const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+            setUploadProgress(percentCompleted);
+          },
+        });
 
-  //       if (response.data.status === 'success') {
-  //         alert('Файл успешно загружен!');
-  //       } else {
-  //         alert('Ошибка при загрузке файла! Повторите снова.');
-  //       }
-  //     } catch (error) {
-  //       console.error('Ошибка: ', error);
-  //       alert('Ошибка при загрузке файла! Повторите снова.')
-  //     } finally {
-  //       setUploadProgress(0);
-  //     }
-  //   }
+        if (response.data.status === 'success') {
+          alert('Файл успешно загружен!');
+        } else {
+          alert('Ошибка при загрузке файла! Повторите снова.');
+        }
+      } catch (error) {
+        console.error('Ошибка: ', error);
+        alert('Ошибка при загрузке файла! Повторите снова.')
+      } finally {
+        setUploadProgress(0);
+      }
+    }
 
-  //   fileInput.click();
-  //   // TODO: Сделать логику загрузки файла и передачи на бэкенд
+    fileInput.click();
+    // TODO: Сделать логику загрузки файла и передачи на бэкенд
     alert("Файл загружен. Идет обработка...");
   }
 
@@ -80,18 +81,20 @@ function App() {
     }
 
     try {
-      const response = await axios.post('http://127.0.0.1:8000/search/', {
+      const response = await axios.post('http://127.0.0.1:8000/api/search/', {
         query: searchQuery,
-      }, {
-        headers: {
-          'Content-Type': 'application/json',
-        },
+      //}, 
+        //{
+        // headers: {
+        //   'Content-Type': 'application/json',
+        // },
       });
 
       if (response.data.status === 'success') {
+        setResults(response.data.results || []);
         setRecsRequested(true);
       } else {
-        alert('Ошибка выполнения.');
+        alert('Ошибка выполнения.' + (response.data.message || ''));
       }
     } catch (error) {
       console.error('Ошибка: ', error);
@@ -135,7 +138,7 @@ function App() {
               className='searchInput' 
               placeholder='Введите запрос для поиска рекомендаций'
               value={searchQuery}
-              onchange={(query) => setSeacrhQuery(query.target.value)}
+              onChange={(query) => setSeacrhQuery(query.target.value)}
             />
             <button className='searchButton' onClick={displayResult}>
               <IonIcon icon={search} style={{ fontSize: '24px', color: '#fff' }} />
@@ -143,9 +146,20 @@ function App() {
           </div>
         </div>
 
-        <div className='resultsContainer' style={{ display: isRecsRequested ? 'flex' : 'none' }}>
+        {/* <div className='resultsContainer' style={{ display: isRecsRequested ? 'flex' : 'none' }}>
           {isRecsRequested && sampleRecs.map((rec, index) => (
             <ResultCard key={index} title={rec.title} content={rec.content} index={index} />
+          ))}
+        </div> */}
+
+        <div className='resultsContainer' style={{ display: isRecsRequested ? 'flex' : 'none' }}>
+          {isRecsRequested && results.map((rec, index) => (
+            <ResultCard
+              key={rec.id || index}
+              title={rec.title}
+              content={rec.text}
+              index={index}
+            />
           ))}
         </div>
 
