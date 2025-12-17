@@ -2,3 +2,17 @@
 node_modules/
 package-lock.json
 backend/data/raw/lenta-ru-news.csv
+backend/data/processed/russian_news_processed_full.csv
+backend/data/processed/russian_news_processed.csv
+backend/data/raw/russian_news1.csv
+backend/data/raw/russian_news2.csv
+backend/data/raw/sample_news.csv
+backend/ml_engine/__pycache__/preprocessor.cpython-313.pyc
+backend/ml_engine/__pycache__/vectorizer.cpython-313.pyc
+backend/ml_engine/models/api_metadata.json
+backend/ml_engine/models/dataset_stats.json
+backend/ml_engine/models/pipeline_config.json
+backend/ml_engine/models/similarity_matrix.pkl
+backend/ml_engine/models/text_vectors.pkl
+backend/ml_engine/models/tfidf_vectorizer.pkl
+backend/ml_engine/models/vectorizer_stats.txt
