@@ -33,43 +33,43 @@ function App() {
   const [searchQuery, setSeacrhQuery] = useState('');
 
   const uploadDataset = async () => {
-    const fileInput = document.createElement('input');
-    fileInput.type = 'file';
-    fileInput.accept = '.csv,.json';
+  //   const fileInput = document.createElement('input');
+  //   fileInput.type = 'file';
+  //   fileInput.accept = '.csv,.json';
 
-    fileInput.onchange = async (event) => {
-      const file = event.target.files[0];
-      if (!file) return;
+  //   fileInput.onchange = async (event) => {
+  //     const file = event.target.files[0];
+  //     if (!file) return;
 
-      const formData = newFormData();
-      formData.append('dataset', file);
+  //     const formData = newFormData();
+  //     formData.append('dataset', file);
 
-      try {
-        const response = await axios.post('http://127.0.0.1:8000/upload/', formData, {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-          onUploadProgress: (progressEvent) => {
-            const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-            setUploadProgress(percentCompleted);
-          },
-        });
+  //     try {
+  //       const response = await axios.post('http://127.0.0.1:8000/upload/', formData, {
+  //         headers: {
+  //           'Content-Type': 'multipart/form-data',
+  //         },
+  //         onUploadProgress: (progressEvent) => {
+  //           const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+  //           setUploadProgress(percentCompleted);
+  //         },
+  //       });
 
-        if (response.data.status === 'success') {
-          alert('Файл успешно загружен!');
-        } else {
-          alert('Ошибка при загрузке файла! Повторите снова.');
-        }
-      } catch (error) {
-        console.error('Ошибка: ', error);
-        alert('Ошибка при загрузке файла! Повторите снова.')
-      } finally {
-        setUploadProgress(0);
-      }
-    }
+  //       if (response.data.status === 'success') {
+  //         alert('Файл успешно загружен!');
+  //       } else {
+  //         alert('Ошибка при загрузке файла! Повторите снова.');
+  //       }
+  //     } catch (error) {
+  //       console.error('Ошибка: ', error);
+  //       alert('Ошибка при загрузке файла! Повторите снова.')
+  //     } finally {
+  //       setUploadProgress(0);
+  //     }
+  //   }
 
-    fileInput.click();
-    // TODO: Сделать логику загрузки файла и передачи на бэкенд
+  //   fileInput.click();
+  //   // TODO: Сделать логику загрузки файла и передачи на бэкенд
     alert("Файл загружен. Идет обработка...");
   }
 
