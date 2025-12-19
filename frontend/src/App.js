@@ -9,19 +9,19 @@ import './App.css';
 const sampleRecs = [
   {
     title: "Warm Result",
-    content: "The coziest search result you'll find today. Perfect for chilly evenings."
+    text: "The coziest search result you'll find today. Perfect for chilly evenings."
   },
   {
     title: "Toasty Discovery",
-    content: "Just like fresh bread from the oven, this result will warm your heart."
+    text: "Just like fresh bread from the oven, this result will warm your heart."
   },
   {
     title: "Sunny Finding",
-    content: "Bright and cheerful, like a summer day in the middle of winter."
+    text: "Bright and cheerful, like a summer day in the middle of winter."
   },
   {
     title: "Final Warmth",
-    content: "The perfect ending to your search - warm, comforting, and satisfying."
+    text: "The perfect ending to your search - warm, comforting, and satisfying."
   }
 ];
 
@@ -70,10 +70,8 @@ function App() {
     }
 
     fileInput.click();
-    // TODO: Сделать логику загрузки файла и передачи на бэкенд
-    alert("Файл загружен. Идет обработка...");
   }
-
+  
   const displayResult = async () => {
     if (!searchQuery.trim()) {
       alert('Пожалуйста, введите запрос для поиска.');
@@ -83,11 +81,6 @@ function App() {
     try {
       const response = await axios.post('http://127.0.0.1:8000/api/search/', {
         query: searchQuery,
-      //}, 
-        //{
-        // headers: {
-        //   'Content-Type': 'application/json',
-        // },
       });
 
       if (response.data.status === 'success') {
@@ -105,12 +98,7 @@ function App() {
   const clearResult = () => {
     setRecsRequested(false);
   }
-
-  const searchMoreRecommendations = () => {
-    // TODO: Добавить возможность получить еще рекомендаций
-    alert("Запрошено больше рекомендаций")
-  }
-
+  
   return (
     <>
       <main className='mainContainer'>
@@ -146,12 +134,6 @@ function App() {
           </div>
         </div>
 
-        {/* <div className='resultsContainer' style={{ display: isRecsRequested ? 'flex' : 'none' }}>
-          {isRecsRequested && sampleRecs.map((rec, index) => (
-            <ResultCard key={index} title={rec.title} content={rec.content} index={index} />
-          ))}
-        </div> */}
-
         <div className='resultsContainer' style={{ display: isRecsRequested ? 'flex' : 'none' }}>
           {isRecsRequested && results.map((rec, index) => (
             <ResultCard
@@ -166,9 +148,6 @@ function App() {
         <div className='bottomButtonsContainer' style={{ display: isRecsRequested ? 'flex' : 'none' }}>
           <button className='clearButton' onClick={clearResult}>
             Очистить рекомендации
-          </button>
-          <button className='moreButton' onClick={searchMoreRecommendations}>
-            Больше...
           </button>
         </div>
 
