@@ -121,7 +121,7 @@
     scrollbar-color: #F97316 #FFEDD5;
     scroll-behavior: smooth;
     margin-top: 16px;
-    justify-content: flex-start;
+    justify-content: center;
 }
 
 .bottomButtonsContainer {
