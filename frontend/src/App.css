@@ -70,11 +70,92 @@
     border-radius: 10px;
 }
 
+.progressBarIndeterminate {
+    overflow: hidden;
+    position: relative;
+}
+
+.progressBarIndeterminate::-webkit-progress-value {
+    background: linear-gradient(90deg, #fff 0%, #f59e0b 50%, #fff 100%);
+    background-size: 200% 100%;
+    animation: indeterminate 1.5s infinite linear;
+    border-radius: 10px;
+    width: 100% !important;
+}
+
+@keyframes indeterminate {
+    0%   { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
 .searchBar {
     display: flex;
     justify-content: center;
     align-items: center;
-    position: relative;}
+    position: relative;
+}
+
+.historyDropdown {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    right: 0;
+    background: #fff;
+    border-radius: 30px;
+    box-shadow: 2px 4px 12px rgba(0, 0, 0, 0.15);
+    list-style: none;
+    margin: 0;
+    padding-left: 0;
+    z-index: 100;
+    overflow: hidden;
+}
+
+.historyDropdownItem {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+.historyDropdownItem:hover,
+.historyDropdownItemActive {
+    background-color: #fef3c7;
+}
+
+.historyDropdownIcon {
+    font-size: 16px;
+    color: #9ca3af;
+    flex-shrink: 0;
+}
+
+.historyDropdownText {
+    flex: 1;
+    font-size: 16px;
+    color: #111827;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.historyDropdownRemove {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #9ca3af;
+    display: flex;
+    align-items: center;
+    font-size: 16px;
+    padding: 2px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    transition: color 0.15s ease;
+}
+
+.historyDropdownRemove:hover {
+    color: #ef4444;
+}
 
 .searchInput {
     width: 100%;
@@ -82,7 +163,7 @@
     padding: 16px 64px 16px 24px;
     font-size: 18px;
     background-color: #fff;
-    border-radius: 40px;
+    border-radius: 30px;
     border: 0;
     box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.3);
 }
@@ -147,4 +228,37 @@
 .clearButton:hover {
     background-color: #4b5563;
     transform: scale(1.05);
+}
+
+.historySection {
+    width: 100%;
+    margin-top: 12px;
+    padding: 0 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.historySectionTitle {
+    font-size: 18px;
+    font-weight: 700;
+    color: #92400e;
+    margin-bottom: 12px;
+    text-align: center;
+    padding-bottom: 8px;
+    border-bottom: 2px dashed #fbbf24;
+    width: 100%;
+    max-width: 42rem;
+}
+
+.historyResultsContainer {
+    display: flex;
+    overflow-x: auto;
+    padding: 16px 0;
+    width: 100%;
+    gap: 20px;
+    scrollbar-width: thin;
+    scrollbar-color: #fbbf24 #fef3c7;
+    scroll-behavior: smooth;
+    justify-content: center;
 }

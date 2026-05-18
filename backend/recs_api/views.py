@@ -41,7 +41,9 @@ def upload_dataset(request):
             'max_features': 5000,
         }
         pipeline = DataPipeline(config)
-        pipeline.run()
+        success = pipeline.run()
+        if not success:
+            return JsonResponse({'status': 'error', 'message': 'Pipeline failed. Check server logs.'}, status=500)
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
@@ -75,5 +77,48 @@ def search_recommendations(request):
             })
 
         return JsonResponse({'status': 'success', 'results': results})
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+@csrf_exempt
+def history_recommendations(request):
+    if request.method != 'POST':
+        return JsonResponse({'status': 'error', 'message': 'Only POST allowed'}, status=405)
+
+    try:
+        body = json.loads(request.body.decode('utf-8'))
+    except json.JSONDecodeError:
+        return JsonResponse({'status': 'error', 'message': 'Invalid JSON'}, status=400)
+
+    history = body.get('history', [])
+    exclude_ids = set(body.get('exclude_ids', []))
+
+    if not history:
+        return JsonResponse({'status': 'success', 'results': []})
+
+    history = history[-3:]
+
+    try:
+        recommender = ContentRecommender(models_dir=MODELS_DIR)
+        seen_ids = set(exclude_ids)
+        combined = []
+
+        for query in history:
+            query = query.strip()
+            if not query:
+                continue
+            df = recommender.get_recommendations_for_user(query, n=3)
+            for _, row in df.iterrows():
+                doc_id = int(row['vector_index'])
+                if doc_id not in seen_ids:
+                    seen_ids.add(doc_id)
+                    combined.append({
+                        'id': doc_id,
+                        'title': row.get('title', ''),
+                        'text': row.get('text', ''),
+                        'similarity': float(row['similarity']),
+                    })
+
+        return JsonResponse({'status': 'success', 'results': combined})
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)

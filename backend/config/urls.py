@@ -22,4 +22,5 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/upload/', views.upload_dataset, name='upload_dataset'),
     path('api/search/', views.search_recommendations, name='search_recommendations'),
+    path('api/history-recs/', views.history_recommendations, name='history_recommendations'),
 ]

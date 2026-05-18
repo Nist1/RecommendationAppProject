@@ -1,0 +1,13 @@
+{
+  "name": "recommendation-app",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "concurrently -n \"backend,frontend\" -c \"blue,green\" \"npm run backend\" \"npm run frontend\"",
+    "backend": "cd backend && set PYTHONIOENCODING=utf-8 && python manage.py runserver",
+    "frontend": "cd frontend && npm start"
+  },
+  "devDependencies": {
+    "concurrently": "^9.0.0"
+  }
+}

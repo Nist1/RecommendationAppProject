@@ -52,8 +52,8 @@
     background-color: #FFEDD5;
     padding: 2rem;
     border-radius: 20px;
-    max-width: 70%;
-    height: 70%;
+    max-width: 40%;
+    height: 40%;
     overflow-y: auto;
     position: relative;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);

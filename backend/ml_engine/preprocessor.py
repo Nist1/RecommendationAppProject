@@ -232,7 +232,7 @@ def process_russian_news_dataset(input_path: str, output_path: str,
     
     # Загрузка данных
     print(f"\n1. Loading data from: {input_path}")
-    df = pd.read_csv(input_path)
+    df = pd.read_csv(input_path, engine='python', on_bad_lines='skip')
     print(f"   Loaded {len(df)} records")
     print(f"   Columns: {list(df.columns)}")
     

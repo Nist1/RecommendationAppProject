@@ -1,12 +1,19 @@
 import './ResultCard.css';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 function ModalCard({isOpen, onClose, title, content}) {
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   return (
-    <div className='modalOverlay'>
-      <div className='modalCard'>
+    <div className='modalOverlay' onClick={onClose}>
+      <div className='modalCard' onClick={(e) => e.stopPropagation()}>
         <button className='closeButton' onClick={onClose}>x</button>
         <h2>{title}</h2>
         <p>{content}</p>
