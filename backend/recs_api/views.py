@@ -13,6 +13,19 @@ PROCESSED_PATH = os.path.join(BASE_DIR, 'data', 'processed', 'russian_news_proce
 MODELS_DIR = os.path.join(BASE_DIR, 'ml_engine', 'models')
 
 
+def serialize_recommendations(df):
+    return [serialize_recommendation_row(row) for _, row in df.iterrows()]
+
+
+def serialize_recommendation_row(row):
+    return {
+        'id': int(row['vector_index']),
+        'title': row.get('title', ''),
+        'text': row.get('text', ''),
+        'similarity': float(row['similarity']),
+    }
+
+
 @csrf_exempt
 def upload_dataset(request):
     if request.method != 'POST':
@@ -67,16 +80,38 @@ def search_recommendations(request):
         recommender = ContentRecommender(models_dir=MODELS_DIR)
         df = recommender.get_recommendations_for_user(query, n=5)
 
-        results = []
-        for _, row in df.iterrows():
-            results.append({
-                'id': int(row['vector_index']),
-                'title': row.get('title', ''),
-                'text': row.get('text', ''),
-                'similarity': float(row['similarity']),
-            })
+        return JsonResponse({'status': 'success', 'results': serialize_recommendations(df)})
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
-        return JsonResponse({'status': 'success', 'results': results})
+
+@csrf_exempt
+def similar_recommendations(request):
+    if request.method != 'POST':
+        return JsonResponse({'status': 'error', 'message': 'Only POST allowed'}, status=405)
+
+    try:
+        body = json.loads(request.body.decode('utf-8'))
+    except json.JSONDecodeError:
+        return JsonResponse({'status': 'error', 'message': 'Invalid JSON'}, status=400)
+
+    item_id = body.get('item_id')
+    n = body.get('n', 3)
+
+    try:
+        item_id = int(item_id)
+        n = int(n)
+    except (TypeError, ValueError):
+        return JsonResponse({'status': 'error', 'message': 'Invalid item_id or n'}, status=400)
+
+    if n < 1:
+        return JsonResponse({'status': 'error', 'message': 'n must be positive'}, status=400)
+
+    try:
+        recommender = ContentRecommender(models_dir=MODELS_DIR)
+        df = recommender.get_similar_items(item_id, n=min(n, 5))
+
+        return JsonResponse({'status': 'success', 'results': serialize_recommendations(df)})
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
@@ -112,12 +147,7 @@ def history_recommendations(request):
                 doc_id = int(row['vector_index'])
                 if doc_id not in seen_ids:
                     seen_ids.add(doc_id)
-                    combined.append({
-                        'id': doc_id,
-                        'title': row.get('title', ''),
-                        'text': row.get('text', ''),
-                        'similarity': float(row['similarity']),
-                    })
+                    combined.append(serialize_recommendation_row(row))
 
         return JsonResponse({'status': 'success', 'results': combined})
     except Exception as e:
