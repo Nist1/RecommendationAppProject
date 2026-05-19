@@ -272,6 +272,7 @@ function App() {
           {isRecsRequested && results.map((rec, index) => (
             <ResultCard
               key={rec.id || index}
+              id={rec.id}
               title={rec.title}
               content={rec.text}
               index={index}
@@ -286,6 +287,7 @@ function App() {
               {historyResults.map((rec, index) => (
                 <ResultCard
                   key={rec.id}
+                  id={rec.id}
                   title={rec.title}
                   content={rec.text}
                   index={index}
