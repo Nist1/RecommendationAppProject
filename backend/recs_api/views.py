@@ -1,16 +1,50 @@
 import os
 import json
+import threading
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 
 from ml_engine.process_pipeline import DataPipeline
 from ml_engine.recomendation import ContentRecommender
+from ml_engine.embedding_recommender import EmbeddingRecommender, build_sbert_vectors
 
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RAW_DIR = os.path.join(BASE_DIR, 'data', 'raw')
 PROCESSED_PATH = os.path.join(BASE_DIR, 'data', 'processed', 'russian_news_processed.csv')
 MODELS_DIR = os.path.join(BASE_DIR, 'ml_engine', 'models')
+
+
+_recommenders = {}
+_lock = threading.Lock()
+
+def _get_recommender(method: str):
+    if method not in _recommenders:
+        with _lock:
+            if method not in _recommenders:
+                if method == 'sbert':
+                    _recommenders[method] = EmbeddingRecommender(models_dir=MODELS_DIR)
+                else:
+                    _recommenders[method] = ContentRecommender(models_dir=MODELS_DIR)
+    return _recommenders[method]
+
+
+def _reset_recommenders():
+    """Сбрасывает кэш после загрузки нового датасета."""
+    _recommenders.clear()
+
+
+def serialize_recommendations(df):
+    return [serialize_recommendation_row(row) for _, row in df.iterrows()]
+
+
+def serialize_recommendation_row(row):
+    return {
+        'id': int(row['vector_index']),
+        'title': row.get('title', ''),
+        'text': row.get('text', ''),
+        'similarity': float(row['similarity']),
+    }
 
 
 @csrf_exempt
@@ -44,6 +78,9 @@ def upload_dataset(request):
         success = pipeline.run()
         if not success:
             return JsonResponse({'status': 'error', 'message': 'Pipeline failed. Check server logs.'}, status=500)
+
+        build_sbert_vectors(MODELS_DIR)
+        _reset_recommenders()
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
@@ -63,8 +100,10 @@ def search_recommendations(request):
     if not query:
         return JsonResponse({'status': 'error', 'message': 'Query is empty'}, status=400)
 
+    method = body.get('method', 'tfidf')
+
     try:
-        recommender = ContentRecommender(models_dir=MODELS_DIR)
+        recommender = _get_recommender(method)
         df = recommender.get_recommendations_for_user(query, n=5)
 
         results = []
@@ -92,6 +131,7 @@ def history_recommendations(request):
 
     history = body.get('history', [])
     exclude_ids = set(body.get('exclude_ids', []))
+    method = body.get('method', 'tfidf')
 
     if not history:
         return JsonResponse({'status': 'success', 'results': []})
@@ -99,7 +139,7 @@ def history_recommendations(request):
     history = history[-3:]
 
     try:
-        recommender = ContentRecommender(models_dir=MODELS_DIR)
+        recommender = _get_recommender(method)
         seen_ids = set(exclude_ids)
         combined = []
 

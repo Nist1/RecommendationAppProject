@@ -12,6 +12,8 @@
 .searchContainer {
     width: 100%;
     max-width: 42rem;
+    position: relative;
+    z-index: 10;
 }
 
 .searchRaised {
@@ -86,6 +88,74 @@
 @keyframes indeterminate {
     0%   { background-position: 200% 0; }
     100% { background-position: -200% 0; }
+}
+
+.methodToggle {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.methodLabel {
+    font-size: 14px;
+    font-weight: 600;
+    color: #9ca3af;
+    transition: color 0.2s ease;
+    user-select: none;
+}
+
+.methodLabel:first-child {
+    text-align: right;
+}
+
+.methodLabel:last-child {
+    text-align: left;
+}
+
+.methodLabelActive {
+    color: #92400e;
+}
+
+.methodSlider {
+    position: relative;
+    display: inline-block;
+    width: 48px;
+    height: 26px;
+    cursor: pointer;
+}
+
+.methodSlider input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+    position: absolute;
+}
+
+.methodSliderTrack {
+    position: absolute;
+    inset: 0;
+    background-color: #fbbf24;
+    border-radius: 26px;
+    transition: background-color 0.2s ease;
+}
+
+.methodSliderTrack::before {
+    content: '';
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    left: 3px;
+    top: 3px;
+    background-color: #fff;
+    border-radius: 50%;
+    transition: transform 0.2s ease;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+.methodSlider input:checked + .methodSliderTrack::before {
+    transform: translateX(22px);
 }
 
 .searchBar {

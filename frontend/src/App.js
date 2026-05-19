@@ -30,6 +30,7 @@ function App() {
   const [historyResults, setHistoryResults] = useState([]);
   const [showHistoryDropdown, setShowHistoryDropdown] = useState(false);
   const [activeHistoryIndex, setActiveHistoryIndex] = useState(-1);
+  const [method, setMethod] = useState('tfidf');
   const searchContainerRef = useRef(null);
 
   const getFilteredHistory = () => {
@@ -110,10 +111,13 @@ function App() {
     const previousHistory = getHistory().slice(0, -1);
 
     setHistoryResults([]);
+    setShowHistoryDropdown(false);
+    setSeacrhQuery('');
 
     try {
       const response = await axios.post('http://127.0.0.1:8000/api/search/', {
         query: searchQuery,
+        method,
       });
 
       if (response.data.status === 'success') {
@@ -126,6 +130,7 @@ function App() {
             const histRes = await axios.post('http://127.0.0.1:8000/api/history-recs/', {
               history: previousHistory,
               exclude_ids: mainResults.map(r => r.id),
+              method,
             });
             if (histRes.data.status === 'success') {
               setHistoryResults(histRes.data.results || []);
@@ -175,6 +180,19 @@ function App() {
               <span>Обработка датасета...</span>
             </div>
           )}
+
+          <div className='methodToggle'>
+            <span className={`methodLabel ${method === 'tfidf' ? 'methodLabelActive' : ''}`}>TF-IDF</span>
+            <label className='methodSlider'>
+              <input
+                type='checkbox'
+                checked={method === 'sbert'}
+                onChange={(e) => setMethod(e.target.checked ? 'sbert' : 'tfidf')}
+              />
+              <span className='methodSliderTrack' />
+            </label>
+            <span className={`methodLabel ${method === 'sbert' ? 'methodLabelActive' : ''}`}>Sentence Transformers</span>
+          </div>
 
           <div className='searchBar' ref={searchContainerRef}>
             <input
