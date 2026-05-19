@@ -9,9 +9,8 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    width: 320px;
-    min-height: 300px;
-    max-height: 300px;
+    width: 300px;
+    height: 300px;
     background-color: #FFEDD5;
     border-left: 6px solid #F97316;
     border-radius: 12px;
@@ -21,7 +20,7 @@
     flex-shrink: 0;
     position: relative;
     cursor: pointer;
-    transition: max-height 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
+    transition: box-shadow 0.25s ease, transform 0.25s ease;
 }
 
 .resultCard:hover,
@@ -29,10 +28,6 @@
     box-shadow: 0 8px 18px rgba(249, 115, 22, 0.22);
     outline: none;
     transform: translateY(-2px);
-}
-
-.resultCardExpanded {
-    max-height: 620px;
 }
 
 .cardTitle {
@@ -60,10 +55,10 @@
     margin: 0;
 }
 
-.similarBlock {
+.modalSimilarBlock {
     border-top: 1px solid rgba(249, 115, 22, 0.28);
-    margin-top: 14px;
-    padding-top: 12px;
+    margin-top: 24px;
+    padding-top: 16px;
 }
 
 .similarTitle {
@@ -140,8 +135,8 @@
     background-color: #FFEDD5;
     padding: 2rem;
     border-radius: 20px;
-    max-width: 40%;
-    height: 40%;
+    width: min(760px, 90vw);
+    max-height: 80vh;
     overflow-y: auto;
     position: relative;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
