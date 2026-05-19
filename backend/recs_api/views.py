@@ -3,10 +3,25 @@ import json
 import threading
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
+from django.contrib.auth import authenticate
+from django.contrib.auth.models import User
 
 from ml_engine.process_pipeline import DataPipeline
 from ml_engine.recomendation import ContentRecommender
 from ml_engine.embedding_recommender import EmbeddingRecommender, build_sbert_vectors
+from recs_api.models import SearchHistory, AuthToken
+
+
+def get_user_from_request(request):
+    """Получить пользователя по токену из заголовка Authorization."""
+    auth = request.headers.get('Authorization', '')
+    if not auth.startswith('Token '):
+        return None
+    key = auth[6:]
+    try:
+        return AuthToken.objects.select_related('user').get(key=key).user
+    except AuthToken.DoesNotExist:
+        return None
 
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -30,7 +45,6 @@ def _get_recommender(method: str):
 
 
 def _reset_recommenders():
-    """Сбрасывает кэш после загрузки нового датасета."""
     _recommenders.clear()
 
 
@@ -47,6 +61,125 @@ def serialize_recommendation_row(row):
     }
 
 
+# --- Auth ---
+
+@csrf_exempt
+def auth_register(request):
+    if request.method != 'POST':
+        return JsonResponse({'status': 'error', 'message': 'Only POST allowed'}, status=405)
+
+    try:
+        body = json.loads(request.body.decode('utf-8'))
+    except json.JSONDecodeError:
+        return JsonResponse({'status': 'error', 'message': 'Invalid JSON'}, status=400)
+
+    username = body.get('username', '').strip()
+    password = body.get('password', '').strip()
+
+    if not username or not password:
+        return JsonResponse({'status': 'error', 'message': 'Username and password required'}, status=400)
+
+    if User.objects.filter(username=username).exists():
+        return JsonResponse({'status': 'error', 'message': 'Пользователь уже существует'}, status=400)
+
+    user = User.objects.create_user(username=username, password=password)
+    token = AuthToken.generate(user)
+    return JsonResponse({'status': 'success', 'username': user.username, 'token': token})
+
+
+@csrf_exempt
+def auth_login(request):
+    if request.method != 'POST':
+        return JsonResponse({'status': 'error', 'message': 'Only POST allowed'}, status=405)
+
+    try:
+        body = json.loads(request.body.decode('utf-8'))
+    except json.JSONDecodeError:
+        return JsonResponse({'status': 'error', 'message': 'Invalid JSON'}, status=400)
+
+    username = body.get('username', '').strip()
+    password = body.get('password', '').strip()
+
+    user = authenticate(request, username=username, password=password)
+    if user is None:
+        return JsonResponse({'status': 'error', 'message': 'Неверный логин или пароль'}, status=401)
+
+    token = AuthToken.generate(user)
+    return JsonResponse({'status': 'success', 'username': user.username, 'token': token})
+
+
+@csrf_exempt
+def auth_logout(request):
+    if request.method != 'POST':
+        return JsonResponse({'status': 'error', 'message': 'Only POST allowed'}, status=405)
+    user = get_user_from_request(request)
+    if user:
+        AuthToken.objects.filter(user=user).delete()
+    return JsonResponse({'status': 'success'})
+
+
+@csrf_exempt
+def auth_me(request):
+    user = get_user_from_request(request)
+    if user:
+        return JsonResponse({'status': 'success', 'username': user.username})
+    return JsonResponse({'status': 'anonymous'})
+
+
+@csrf_exempt
+def auth_history_delete(request):
+    if request.method != 'POST':
+        return JsonResponse({'status': 'error', 'message': 'Only POST allowed'}, status=405)
+    user = get_user_from_request(request)
+    if not user:
+        return JsonResponse({'status': 'error', 'message': 'Not authenticated'}, status=401)
+
+    try:
+        body = json.loads(request.body.decode('utf-8'))
+    except json.JSONDecodeError:
+        return JsonResponse({'status': 'error', 'message': 'Invalid JSON'}, status=400)
+
+    query = body.get('query', '').strip()
+    SearchHistory.objects.filter(user=user, query=query).delete()
+    return JsonResponse({'status': 'success'})
+
+
+@csrf_exempt
+def auth_history_clear(request):
+    if request.method != 'POST':
+        return JsonResponse({'status': 'error', 'message': 'Only POST allowed'}, status=405)
+    user = get_user_from_request(request)
+    if not user:
+        return JsonResponse({'status': 'error', 'message': 'Not authenticated'}, status=401)
+
+    SearchHistory.objects.filter(user=user).delete()
+    return JsonResponse({'status': 'success'})
+
+
+@csrf_exempt
+def auth_history(request):
+    if request.method != 'GET':
+        return JsonResponse({'status': 'error', 'message': 'Only GET allowed'}, status=405)
+    user = get_user_from_request(request)
+    if not user:
+        return JsonResponse({'status': 'error', 'message': 'Not authenticated'}, status=401)
+
+    entries = SearchHistory.objects.filter(user=user).values('query', 'timestamp')[:20]
+    total = SearchHistory.objects.filter(user=user).count()
+
+    history = [
+        {
+            'query': e['query'],
+            'timestamp': e['timestamp'].strftime('%d.%m.%Y %H:%M'),
+        }
+        for e in entries
+    ]
+
+    return JsonResponse({'status': 'success', 'history': history, 'total': total})
+
+
+# --- Dataset ---
+
 @csrf_exempt
 def upload_dataset(request):
     if request.method != 'POST':
@@ -59,12 +192,10 @@ def upload_dataset(request):
     os.makedirs(RAW_DIR, exist_ok=True)
     raw_path = os.path.join(RAW_DIR, 'uploaded_dataset.csv')
 
-    # Сохранить загруженный файл
     with open(raw_path, 'wb+') as destination:
         for chunk in file.chunks():
             destination.write(chunk)
 
-    # Запустить пайплайн (предобработка + векторизация)
     try:
         config = {
             'raw_data_path': raw_path,
@@ -86,6 +217,9 @@ def upload_dataset(request):
 
     return JsonResponse({'status': 'success'})
 
+
+# --- Recommendations ---
+
 @csrf_exempt
 def search_recommendations(request):
     if request.method != 'POST':
@@ -102,10 +236,13 @@ def search_recommendations(request):
 
     method = body.get('method', 'tfidf')
 
+    user = get_user_from_request(request)
+    if user:
+        SearchHistory.objects.create(user=user, query=query)
+
     try:
         recommender = _get_recommender(method)
         df = recommender.get_recommendations_for_user(query, n=5)
-
         return JsonResponse({'status': 'success', 'results': serialize_recommendations(df)})
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
@@ -136,10 +273,10 @@ def similar_recommendations(request):
     try:
         recommender = ContentRecommender(models_dir=MODELS_DIR)
         df = recommender.get_similar_items(item_id, n=min(n, 5))
-
         return JsonResponse({'status': 'success', 'results': serialize_recommendations(df)})
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
 
 @csrf_exempt
 def history_recommendations(request):
@@ -151,14 +288,20 @@ def history_recommendations(request):
     except json.JSONDecodeError:
         return JsonResponse({'status': 'error', 'message': 'Invalid JSON'}, status=400)
 
-    history = body.get('history', [])
-    exclude_ids = set(body.get('exclude_ids', []))
     method = body.get('method', 'tfidf')
+    exclude_ids = set(body.get('exclude_ids', []))
+
+    user = get_user_from_request(request)
+    if user:
+        history = list(
+            SearchHistory.objects.filter(user=user)
+            .values_list('query', flat=True)[:3]
+        )
+    else:
+        history = body.get('history', [])
 
     if not history:
         return JsonResponse({'status': 'success', 'results': []})
-
-    history = history[-3:]
 
     try:
         recommender = _get_recommender(method)

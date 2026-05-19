@@ -1,25 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
 import { IonIcon } from '@ionic/react';
-import { attach, search, close } from 'ionicons/icons';
+import { attach, search, close, personCircleOutline } from 'ionicons/icons';
 import axios from 'axios';
 import ResultCard from './ResultCard';
+import ProfileSidebar from './ProfileSidebar';
 import './App.css';
-
-const HISTORY_KEY = 'searchHistory';
-const MAX_HISTORY = 5;
-
-function saveQueryToHistory(query) {
-  const trimmed = query.trim();
-  if (!trimmed) return;
-  const existing = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
-  const deduped = existing.filter(q => q !== trimmed);
-  deduped.push(trimmed);
-  localStorage.setItem(HISTORY_KEY, JSON.stringify(deduped.slice(-MAX_HISTORY)));
-}
-
-function getHistory() {
-  return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
-}
 
 function App() {
   const [isRecsRequested, setRecsRequested] = useState(false);
@@ -31,20 +16,54 @@ function App() {
   const [showHistoryDropdown, setShowHistoryDropdown] = useState(false);
   const [activeHistoryIndex, setActiveHistoryIndex] = useState(-1);
   const [method, setMethod] = useState('tfidf');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [user, setUser] = useState(null);
+  const [searchHistory, setSearchHistory] = useState([]);
   const searchContainerRef = useRef(null);
 
-  const getFilteredHistory = () => {
-    const history = getHistory();
-    if (!searchQuery.trim()) return history.slice().reverse();
-    return history.slice().reverse().filter(q =>
-      q.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+  const getToken = () => localStorage.getItem('authToken');
+
+  const fetchHistory = async () => {
+    const token = getToken();
+    if (!token) return;
+    try {
+      const res = await axios.get('http://127.0.0.1:8000/api/auth/history/', {
+        headers: { Authorization: `Token ${token}` }
+      });
+      if (res.data.status === 'success') {
+        setSearchHistory(res.data.history.map(h => h.query));
+      }
+    } catch {}
   };
 
-  const removeFromHistory = (queryToRemove) => {
-    const existing = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
-    localStorage.setItem(HISTORY_KEY, JSON.stringify(existing.filter(q => q !== queryToRemove)));
+  const getFilteredHistory = () => {
+    if (!searchQuery.trim()) return searchHistory;
+    return searchHistory.filter(q => q.toLowerCase().includes(searchQuery.toLowerCase()));
   };
+
+  const removeFromHistory = async (queryToRemove) => {
+    const token = getToken();
+    if (!token) return;
+    try {
+      await axios.post('http://127.0.0.1:8000/api/auth/history/delete/', { query: queryToRemove }, {
+        headers: { Authorization: `Token ${token}` }
+      });
+      setSearchHistory(prev => prev.filter(q => q !== queryToRemove));
+    } catch {}
+  };
+
+  useEffect(() => {
+    const token = getToken();
+    if (!token) return;
+    axios.get('http://127.0.0.1:8000/api/auth/me/', {
+      headers: { Authorization: `Token ${token}` }
+    }).then(res => {
+      if (res.data.status === 'success') {
+        setUser(res.data.username);
+        fetchHistory();
+      }
+    }).catch(() => {});
+  }, []);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -107,31 +126,29 @@ function App() {
       return;
     }
 
-    saveQueryToHistory(searchQuery);
-    const previousHistory = getHistory().slice(0, -1);
-
     setHistoryResults([]);
     setShowHistoryDropdown(false);
     setSeacrhQuery('');
 
     try {
+      const token = getToken();
       const response = await axios.post('http://127.0.0.1:8000/api/search/', {
         query: searchQuery,
         method,
-      });
+      }, { headers: token ? { Authorization: `Token ${token}` } : {} });
 
       if (response.data.status === 'success') {
         const mainResults = response.data.results || [];
         setResults(mainResults);
         setRecsRequested(true);
+        if (user) fetchHistory();
 
-        if (previousHistory.length > 0) {
+        if (user) {
           try {
             const histRes = await axios.post('http://127.0.0.1:8000/api/history-recs/', {
-              history: previousHistory,
               exclude_ids: mainResults.map(r => r.id),
               method,
-            });
+            }, { headers: token ? { Authorization: `Token ${token}` } : {} });
             if (histRes.data.status === 'success') {
               setHistoryResults(histRes.data.results || []);
             }
@@ -155,6 +172,21 @@ function App() {
 
   return (
     <>
+      <div className='profileButtonContainer'>
+        <button className={`profileButton ${!user ? 'profileButtonIcon' : ''}`} onClick={() => setSidebarOpen(true)}>
+          <IonIcon icon={personCircleOutline} style={{ fontSize: '28px' }} />
+          {user && <span className='profileUsername'>{user}</span>}
+        </button>
+      </div>
+
+      <ProfileSidebar
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        user={user}
+        onUserChange={(u) => { setUser(u); if (u) { setSidebarOpen(false); fetchHistory(); } else { setSearchHistory([]); } }}
+        onQuerySelect={(q) => { setSeacrhQuery(q); }}
+      />
+
       <main className='mainContainer'>
 
         <div className={`searchContainer ${isRecsRequested ? 'searchRaised' : ''}`}>
@@ -232,7 +264,7 @@ function App() {
                 }
               }}
             />
-            {showHistoryDropdown && getFilteredHistory().length > 0 && (
+            {user && showHistoryDropdown && getFilteredHistory().length > 0 && (
               <ul className='historyDropdown'>
                 {getFilteredHistory().map((item, index) => (
                   <li

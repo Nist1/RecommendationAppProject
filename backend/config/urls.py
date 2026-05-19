@@ -24,4 +24,11 @@ urlpatterns = [
     path('api/search/', views.search_recommendations, name='search_recommendations'),
     path('api/similar/', views.similar_recommendations, name='similar_recommendations'),
     path('api/history-recs/', views.history_recommendations, name='history_recommendations'),
+    path('api/auth/register/', views.auth_register, name='auth_register'),
+    path('api/auth/login/', views.auth_login, name='auth_login'),
+    path('api/auth/logout/', views.auth_logout, name='auth_logout'),
+    path('api/auth/me/', views.auth_me, name='auth_me'),
+    path('api/auth/history/', views.auth_history, name='auth_history'),
+    path('api/auth/history/clear/', views.auth_history_clear, name='auth_history_clear'),
+    path('api/auth/history/delete/', views.auth_history_delete, name='auth_history_delete'),
 ]
